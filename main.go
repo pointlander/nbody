@@ -132,7 +132,7 @@ func LearnEmbedding(iris []Fisher, size, width, iterations int) []Fisher {
 				}
 			}
 		}
-		fmt.Println(l)
+		//fmt.Println(l)
 	}
 
 	ii := set.ByName["i"]
@@ -147,40 +147,69 @@ func LearnEmbedding(iris []Fisher, size, width, iterations int) []Fisher {
 
 func main() {
 	type Point struct {
-		X float64
-		Y float64
+		X, Y   float64
+		VX, VY float64
+		FX, FY float64
 	}
 	points := []Point{
-		{0, 0},
-		{1, 0},
-		{1, 1},
+		{X: 0, Y: 0},
+		{X: 1, Y: 0},
+		{X: 1, Y: 1},
 	}
-	input := make([]Fisher, len(points))
-	for i := range input {
-		input[i].Measures = make([]float64, len(points))
-	}
-	for i := range points {
-		for j := range points {
-			x := points[i].X - points[j].X
-			y := points[i].Y - points[j].Y
-			r := math.Sqrt(x*x + y*y)
-			if r > 0 {
-				input[i].Measures[j] = 1 / (r * r)
+	for range 33 {
+		input := make([]Fisher, len(points))
+		for i := range input {
+			input[i].Measures = make([]float64, len(points))
+		}
+		for i := range points {
+			for j := range points {
+				x := points[j].X - points[i].X
+				y := points[j].Y - points[i].Y
+				r := math.Sqrt(x*x + y*y)
+				if r > 0 {
+					input[i].Measures[j] = 1 / (r * r)
+				}
 			}
 		}
-	}
-	output := LearnEmbedding(input, len(points), len(points), 256)
-	for i := range input {
-		fmt.Println(input[i].Measures)
-	}
-	for i := range input {
-		fmt.Println(input[i].Embedding)
-	}
-	fmt.Println()
-	for i := range output {
-		fmt.Println(output[i].Measures)
-	}
-	for i := range output {
-		fmt.Println(output[i].Embedding)
+
+		output := LearnEmbedding(input, len(points), len(points), 256)
+		/*for i := range input {
+			fmt.Println(input[i].Measures)
+		}
+		for i := range input {
+			fmt.Println(input[i].Embedding)
+		}
+		fmt.Println()
+		for i := range output {
+			fmt.Println(output[i].Measures)
+		}
+		for i := range output {
+			fmt.Println(output[i].Embedding)
+		}*/
+		for i := range points {
+			for j := range points {
+				x := points[j].X - points[i].X
+				y := points[j].Y - points[i].Y
+				r := math.Sqrt(x*x + y*y)
+				if r > 0 {
+					points[j].FX += output[i].Embedding[j] * x / r
+					points[j].FY += output[i].Embedding[j] * y / r
+				}
+			}
+		}
+		for i := range points {
+			dt := 1.0
+			ax := points[i].FX
+			ay := points[i].FY
+			points[i].VX += ax * dt
+			points[i].VY += ay * dt
+			points[i].X += points[i].VX * dt
+			points[i].Y += points[i].VY * dt
+		}
+		for i := range points {
+			fmt.Println(points[i].X, points[i].Y)
+		}
+		fmt.Println()
+		input = output
 	}
 }
