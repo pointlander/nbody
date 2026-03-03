@@ -19,7 +19,7 @@ const (
 	// B2 exponential decay rate for the second-moment estimates
 	B2 = 0.89
 	// Eta is the learning rate
-	Eta = 1.0e-2
+	Eta = 1.0e-3
 )
 
 const (
@@ -73,7 +73,7 @@ func LearnEmbedding(iris []Fisher, size, width, iterations int) []Fisher {
 		}
 	}
 
-	drop := .3
+	drop := .1
 	dropout := map[string]interface{}{
 		"rng":  rng,
 		"drop": &drop,
@@ -135,9 +135,52 @@ func LearnEmbedding(iris []Fisher, size, width, iterations int) []Fisher {
 		fmt.Println(l)
 	}
 
+	ii := set.ByName["i"]
+	for i := range ii.S[1] {
+		embedding := make([]float64, ii.S[0])
+		copy(embedding, ii.X[i*ii.S[0]:(i+1)*ii.S[0]])
+		cp[i].Embedding = embedding
+	}
+
 	return cp
 }
 
 func main() {
-
+	type Point struct {
+		X float64
+		Y float64
+	}
+	points := []Point{
+		{0, 0},
+		{1, 0},
+		{1, 1},
+	}
+	input := make([]Fisher, len(points))
+	for i := range input {
+		input[i].Measures = make([]float64, len(points))
+	}
+	for i := range points {
+		for j := range points {
+			x := points[i].X - points[j].X
+			y := points[i].Y - points[j].Y
+			r := math.Sqrt(x*x + y*y)
+			if r > 0 {
+				input[i].Measures[j] = 1 / (r * r)
+			}
+		}
+	}
+	output := LearnEmbedding(input, len(points), len(points), 256)
+	for i := range input {
+		fmt.Println(input[i].Measures)
+	}
+	for i := range input {
+		fmt.Println(input[i].Embedding)
+	}
+	fmt.Println()
+	for i := range output {
+		fmt.Println(output[i].Measures)
+	}
+	for i := range output {
+		fmt.Println(output[i].Embedding)
+	}
 }
