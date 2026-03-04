@@ -161,7 +161,7 @@ func main() {
 	}
 	points := []Point{}
 	for range 33 {
-		points = append(points, Point{X: rng.Float64(), Y: rng.Float64(), Z: rng.Float64()})
+		points = append(points, Point{X: rng.NormFloat64(), Y: rng.NormFloat64(), Z: rng.NormFloat64()})
 	}
 	images := &gif.GIF{}
 	var palette = []color.Color{}
