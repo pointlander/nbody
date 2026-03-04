@@ -187,6 +187,10 @@ func main() {
 			fmt.Println(output[i].Embedding)
 		}*/
 		for i := range points {
+			points[i].FX = 0
+			points[i].FY = 0
+		}
+		for i := range points {
 			for j := range points {
 				x := points[j].X - points[i].X
 				y := points[j].Y - points[i].Y
