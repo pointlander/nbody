@@ -280,7 +280,6 @@ func main() {
 		images.Image = append(images.Image, image)
 		images.Delay = append(images.Delay, 10)
 		fmt.Println()
-		input = output
 	}
 	out, err := os.Create("verse.gif")
 	if err != nil {
