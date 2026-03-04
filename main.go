@@ -6,8 +6,12 @@ package main
 
 import (
 	"fmt"
+	"image"
+	"image/color"
+	"image/gif"
 	"math"
 	"math/rand"
+	"os"
 	"strings"
 
 	"github.com/pointlander/gradient/tf64"
@@ -153,10 +157,17 @@ func main() {
 	}
 	points := []Point{
 		{X: 0, Y: 0},
+		{X: 0, Y: 1},
 		{X: 1, Y: 0},
 		{X: 1, Y: 1},
 	}
-	for range 33 {
+	images := &gif.GIF{}
+	var palette = []color.Color{}
+	for i := range 256 {
+		g := byte(i)
+		palette = append(palette, color.RGBA{g, g, g, 0xff})
+	}
+	for range 256 {
 		input := make([]Fisher, len(points))
 		for i := range input {
 			input[i].Measures = make([]float64, len(points))
@@ -210,10 +221,40 @@ func main() {
 			points[i].X += points[i].VX * dt
 			points[i].Y += points[i].VY * dt
 		}
+		minX, maxX, minY, maxY := math.MaxFloat64, -math.MaxFloat64, math.MaxFloat64, -math.MaxFloat64
 		for i := range points {
 			fmt.Println(points[i].X, points[i].Y)
+			if points[i].X < minX {
+				minX = points[i].X
+			}
+			if points[i].X > maxX {
+				maxX = points[i].X
+			}
+			if points[i].Y < minY {
+				minY = points[i].Y
+			}
+			if points[i].Y > maxY {
+				maxY = points[i].Y
+			}
 		}
+		image := image.NewPaletted(image.Rect(0, 0, 512, 512), palette)
+		for i := range points {
+			x := 500*(points[i].X-minX)/(maxX-minX) + 6
+			y := 500*(points[i].Y-minY)/(maxY-minY) + 6
+			image.Set(int(x), int(y), color.RGBA{0xff, 0xff, 0xff, 0xff})
+		}
+		images.Image = append(images.Image, image)
+		images.Delay = append(images.Delay, 10)
 		fmt.Println()
 		input = output
+	}
+	out, err := os.Create("verse.gif")
+	if err != nil {
+		panic(err)
+	}
+	defer out.Close()
+	err = gif.EncodeAll(out, images)
+	if err != nil {
+		panic(err)
 	}
 }
