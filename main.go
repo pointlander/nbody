@@ -15,6 +15,9 @@ import (
 	"strings"
 
 	"github.com/pointlander/gradient/tf64"
+
+	"gonum.org/v1/gonum/mat"
+	"gonum.org/v1/gonum/stat"
 )
 
 const (
@@ -150,16 +153,15 @@ func LearnEmbedding(iris []Fisher, size, width, iterations int) []Fisher {
 }
 
 func main() {
+	rng := rand.New(rand.NewSource(1))
 	type Point struct {
-		X, Y   float64
-		VX, VY float64
-		FX, FY float64
+		X, Y, Z    float64
+		VX, VY, VZ float64
+		FX, FY, FZ float64
 	}
-	points := []Point{
-		{X: 0, Y: 0},
-		{X: 0, Y: 1},
-		{X: 1, Y: 0},
-		{X: 1, Y: 1},
+	points := []Point{}
+	for range 33 {
+		points = append(points, Point{X: rng.Float64(), Y: rng.Float64(), Z: rng.Float64()})
 	}
 	images := &gif.GIF{}
 	var palette = []color.Color{}
@@ -176,7 +178,8 @@ func main() {
 			for j := range points {
 				x := points[j].X - points[i].X
 				y := points[j].Y - points[i].Y
-				r := math.Sqrt(x*x + y*y)
+				z := points[j].Z - points[i].Z
+				r := math.Sqrt(x*x + y*y + z*z)
 				if r > 0 {
 					input[i].Measures[j] = 1 / (r * r)
 				}
@@ -200,15 +203,18 @@ func main() {
 		for i := range points {
 			points[i].FX = 0
 			points[i].FY = 0
+			points[i].FZ = 0
 		}
 		for i := range points {
 			for j := range points {
 				x := points[j].X - points[i].X
 				y := points[j].Y - points[i].Y
-				r := math.Sqrt(x*x + y*y)
+				z := points[j].Z - points[i].Z
+				r := math.Sqrt(x*x + y*y + z*z)
 				if r > 0 {
 					points[j].FX += output[i].Embedding[j] * x / r
 					points[j].FY += output[i].Embedding[j] * y / r
+					points[j].FZ += output[i].Embedding[j] * z / r
 				}
 			}
 		}
@@ -216,31 +222,59 @@ func main() {
 			dt := 1.0
 			ax := points[i].FX
 			ay := points[i].FY
+			az := points[i].FZ
 			points[i].VX += ax * dt
 			points[i].VY += ay * dt
+			points[i].VZ += az * dt
 			points[i].X += points[i].VX * dt
 			points[i].Y += points[i].VY * dt
+			points[i].Z += points[i].VZ * dt
 		}
+		out := make([]float64, 0, 3*len(points))
+		in := make([]float64, 0, 3*len(points))
+		for i := range points {
+			in = append(in, points[i].X, points[i].Y, points[i].Z)
+		}
+		data := mat.NewDense(len(points), 3, in)
+		var pc stat.PC
+		ok := pc.PrincipalComponents(data, nil)
+		if !ok {
+			panic("failed to compute principal components")
+		}
+
+		var projection mat.Dense
+		var vector mat.Dense
+		pc.VectorsTo(&vector)
+		projection.Mul(data, &vector)
+		rows, cols := projection.Dims()
+		for i := 0; i < rows; i++ {
+			for j := 0; j < cols; j++ {
+				out = append(out, projection.At(i, j))
+			}
+		}
+
 		minX, maxX, minY, maxY := math.MaxFloat64, -math.MaxFloat64, math.MaxFloat64, -math.MaxFloat64
 		for i := range points {
-			fmt.Println(points[i].X, points[i].Y)
-			if points[i].X < minX {
-				minX = points[i].X
+			x, y := out[i*cols], out[i*cols+1]
+			fmt.Println(x, y)
+			if x < minX {
+				minX = x
 			}
-			if points[i].X > maxX {
-				maxX = points[i].X
+			if x > maxX {
+				maxX = x
 			}
-			if points[i].Y < minY {
-				minY = points[i].Y
+			if y < minY {
+				minY = y
 			}
-			if points[i].Y > maxY {
-				maxY = points[i].Y
+			if y > maxY {
+				maxY = y
 			}
 		}
 		image := image.NewPaletted(image.Rect(0, 0, 512, 512), palette)
 		for i := range points {
-			x := 500*(points[i].X-minX)/(maxX-minX) + 6
-			y := 500*(points[i].Y-minY)/(maxY-minY) + 6
+			xx, yy := out[i*cols], out[i*cols+1]
+			x := 500*(xx-minX)/(maxX-minX) + 6
+			y := 500*(yy-minY)/(maxY-minY) + 6
 			image.Set(int(x), int(y), color.RGBA{0xff, 0xff, 0xff, 0xff})
 		}
 		images.Image = append(images.Image, image)
