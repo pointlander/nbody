@@ -89,6 +89,7 @@ func LearnEmbedding(iris []Fisher, size, width, iterations int) []Fisher {
 	sa := tf64.T(tf64.Mul(tf64.Dropout(tf64.Square(set.Get("i")), dropout), tf64.T(others.Get("x"))))
 	loss := tf64.Avg(tf64.Quadratic(others.Get("x"), sa))
 
+	count := 0
 	for iteration := range iterations {
 		pow := func(x float64) float64 {
 			y := math.Pow(x, float64(iteration+1))
@@ -138,6 +139,13 @@ func LearnEmbedding(iris []Fisher, size, width, iterations int) []Fisher {
 					w.X[ii] += .05 * g
 				}
 			}
+		}
+		if l < 1e-6 {
+			count++
+		}
+		if count >= 8 {
+			fmt.Println("done", l, iteration)
+			break
 		}
 		//fmt.Println(l)
 	}
