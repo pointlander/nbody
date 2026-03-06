@@ -3,6 +3,7 @@ module github.com/pointlander/nbody
 go 1.25.0
 
 require (
+	github.com/pointlander/compress v1.1.1-0.20250321181703-4627735067bb
 	github.com/pointlander/gradient v0.0.0-20260301191349-1d3df6f5ab0d
 	gonum.org/v1/gonum v0.17.0
 	gonum.org/v1/plot v0.15.2

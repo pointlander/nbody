@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"image/color"
@@ -14,6 +15,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/pointlander/compress"
 	"github.com/pointlander/gradient/tf64"
 
 	"gonum.org/v1/gonum/mat"
@@ -182,6 +184,7 @@ func main() {
 		palette = append(palette, color.RGBA{g, g, g, 0xff})
 	}
 	trace := make(plotter.XYs, 0, 8)
+	k := make(plotter.XYs, 0, 8)
 	for epoch := range 256 {
 		input := make([]Fisher, len(points))
 		for i := range input {
@@ -293,34 +296,60 @@ func main() {
 		images.Image = append(images.Image, image)
 		images.Delay = append(images.Delay, 10)
 		fmt.Println()
+		buffer := bytes.Buffer{}
+		cp := make([]byte, len(image.Pix))
+		copy(cp, image.Pix)
+		compress.Mark1Compress16(cp, &buffer)
 		trace = append(trace, plotter.XY{X: float64(epoch), Y: (maxX - minX) / (maxY - minY)})
+		k = append(k, plotter.XY{X: float64(epoch), Y: float64(buffer.Len())})
 	}
-	out, err := os.Create("verse.gif")
-	if err != nil {
-		panic(err)
-	}
-	defer out.Close()
-	err = gif.EncodeAll(out, images)
-	if err != nil {
-		panic(err)
-	}
-	p := plot.New()
+	{
+		out, err := os.Create("verse.gif")
+		if err != nil {
+			panic(err)
+		}
+		defer out.Close()
+		err = gif.EncodeAll(out, images)
+		if err != nil {
+			panic(err)
+		}
+		p := plot.New()
 
-	p.Title.Text = "x vs y"
-	p.X.Label.Text = "x"
-	p.Y.Label.Text = "y"
+		p.Title.Text = "x vs y"
+		p.X.Label.Text = "x"
+		p.Y.Label.Text = "y"
 
-	scatter, err := plotter.NewScatter(trace)
-	if err != nil {
-		panic(err)
+		scatter, err := plotter.NewScatter(trace)
+		if err != nil {
+			panic(err)
+		}
+		scatter.GlyphStyle.Radius = vg.Length(1)
+		scatter.GlyphStyle.Shape = draw.CircleGlyph{}
+		p.Add(scatter)
+
+		err = p.Save(8*vg.Inch, 8*vg.Inch, "scale.png")
+		if err != nil {
+			panic(err)
+		}
 	}
-	scatter.GlyphStyle.Radius = vg.Length(1)
-	scatter.GlyphStyle.Shape = draw.CircleGlyph{}
-	p.Add(scatter)
+	{
+		p := plot.New()
 
-	err = p.Save(8*vg.Inch, 8*vg.Inch, "scale.png")
-	if err != nil {
-		panic(err)
+		p.Title.Text = "x vs y"
+		p.X.Label.Text = "x"
+		p.Y.Label.Text = "y"
+
+		scatter, err := plotter.NewScatter(k)
+		if err != nil {
+			panic(err)
+		}
+		scatter.GlyphStyle.Radius = vg.Length(1)
+		scatter.GlyphStyle.Shape = draw.CircleGlyph{}
+		p.Add(scatter)
+
+		err = p.Save(8*vg.Inch, 8*vg.Inch, "k.png")
+		if err != nil {
+			panic(err)
+		}
 	}
-
 }
