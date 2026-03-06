@@ -182,7 +182,7 @@ func main() {
 		palette = append(palette, color.RGBA{g, g, g, 0xff})
 	}
 	trace := make(plotter.XYs, 0, 8)
-	for range 256 {
+	for epoch := range 256 {
 		input := make([]Fisher, len(points))
 		for i := range input {
 			input[i].Measures = make([]float64, len(points))
@@ -293,7 +293,7 @@ func main() {
 		images.Image = append(images.Image, image)
 		images.Delay = append(images.Delay, 10)
 		fmt.Println()
-		trace = append(trace, plotter.XY{X: maxX - minX, Y: maxY - minY})
+		trace = append(trace, plotter.XY{X: float64(epoch), Y: (maxX - minX) / (maxY - minY)})
 	}
 	out, err := os.Create("verse.gif")
 	if err != nil {
