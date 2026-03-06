@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"image"
 	"image/color"
@@ -166,7 +167,14 @@ func LearnEmbedding(iris []Fisher, size, width, iterations int) []Fisher {
 	return cp
 }
 
+var (
+	// FlagK compute k complexity
+	FlagK = flag.Bool("k", false, "plot k complexity")
+)
+
 func main() {
+	flag.Parse()
+
 	rng := rand.New(rand.NewSource(1))
 	type Point struct {
 		X, Y, Z    float64
@@ -296,12 +304,14 @@ func main() {
 		images.Image = append(images.Image, image)
 		images.Delay = append(images.Delay, 10)
 		fmt.Println()
-		buffer := bytes.Buffer{}
-		cp := make([]byte, len(image.Pix))
-		copy(cp, image.Pix)
-		compress.Mark1Compress16(cp, &buffer)
+		if *FlagK {
+			buffer := bytes.Buffer{}
+			cp := make([]byte, len(image.Pix))
+			copy(cp, image.Pix)
+			compress.Mark1Compress16(cp, &buffer)
+			k = append(k, plotter.XY{X: float64(epoch), Y: float64(buffer.Len())})
+		}
 		trace = append(trace, plotter.XY{X: float64(epoch), Y: (maxX - minX) / (maxY - minY)})
-		k = append(k, plotter.XY{X: float64(epoch), Y: float64(buffer.Len())})
 	}
 	{
 		out, err := os.Create("verse.gif")
@@ -332,7 +342,7 @@ func main() {
 			panic(err)
 		}
 	}
-	{
+	if *FlagK {
 		p := plot.New()
 
 		p.Title.Text = "x vs y"
