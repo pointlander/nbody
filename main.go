@@ -18,6 +18,10 @@ import (
 
 	"gonum.org/v1/gonum/mat"
 	"gonum.org/v1/gonum/stat"
+	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/plotter"
+	"gonum.org/v1/plot/vg"
+	"gonum.org/v1/plot/vg/draw"
 )
 
 const (
@@ -177,6 +181,7 @@ func main() {
 		g := byte(i)
 		palette = append(palette, color.RGBA{g, g, g, 0xff})
 	}
+	trace := make(plotter.XYs, 0, 8)
 	for range 256 {
 		input := make([]Fisher, len(points))
 		for i := range input {
@@ -288,6 +293,7 @@ func main() {
 		images.Image = append(images.Image, image)
 		images.Delay = append(images.Delay, 10)
 		fmt.Println()
+		trace = append(trace, plotter.XY{X: maxX - minX, Y: maxY - minY})
 	}
 	out, err := os.Create("verse.gif")
 	if err != nil {
@@ -298,4 +304,23 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	p := plot.New()
+
+	p.Title.Text = "x vs y"
+	p.X.Label.Text = "x"
+	p.Y.Label.Text = "y"
+
+	scatter, err := plotter.NewScatter(trace)
+	if err != nil {
+		panic(err)
+	}
+	scatter.GlyphStyle.Radius = vg.Length(1)
+	scatter.GlyphStyle.Shape = draw.CircleGlyph{}
+	p.Add(scatter)
+
+	err = p.Save(8*vg.Inch, 8*vg.Inch, "scale.png")
+	if err != nil {
+		panic(err)
+	}
+
 }
