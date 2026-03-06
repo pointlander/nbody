@@ -323,11 +323,11 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		p := plot.New()
 
-		p.Title.Text = "x vs y"
-		p.X.Label.Text = "x"
-		p.Y.Label.Text = "y"
+		p := plot.New()
+		p.Title.Text = "symmetry vs time"
+		p.X.Label.Text = "time"
+		p.Y.Label.Text = "symmetry"
 
 		scatter, err := plotter.NewScatter(trace)
 		if err != nil {
@@ -345,9 +345,9 @@ func main() {
 	if *FlagK {
 		p := plot.New()
 
-		p.Title.Text = "x vs y"
-		p.X.Label.Text = "x"
-		p.Y.Label.Text = "y"
+		p.Title.Text = "k complexity vs time"
+		p.X.Label.Text = "time"
+		p.Y.Label.Text = "k complexity"
 
 		scatter, err := plotter.NewScatter(k)
 		if err != nil {
